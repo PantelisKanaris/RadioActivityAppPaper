@@ -20,11 +20,115 @@
 \section{Related Work}
 
 \section{System Model \& Problem Formulation}
-
+In this section we present the system model, problem formulation, and baseline approaches.
 \subsection{System Model}
+The proposed system consists of three principal components: (1) an atmospheric dispersion
+simulation module based on the HYSPLIT model, (2) a web-based interface for simulation
+configuration and visualization, and (3) an escape-route planning module that operates on the
+processed dispersion output.
+
+\textbf{HYSPLIT Simulation Component:}
+HYSPLIT is an established atmospheric dispersion model widely used for modelling the
+transport and diffusion of hazardous airborne materials. It requires as input the source location,
+release height, release duration, and meteorological data corresponding to the simulation period.
+Because HYSPLIT only accepts meteorological data in the ARL (Air Resources Laboratory)
+format, publicly available GFS (Global Forecast System) data must first be preprocessed using
+the official conversion utilities. After preprocessing, the model is executed within a Docker
+container hosted on a dedicated server. The model produces a sequence of hourly output files,
+each containing concentration values at discrete geographic coordinates.
+
+
+\textbf{Data Processing Component:}
+Upon completion of the simulation, the generated output files are parsed and the concentration
+values, coordinates, and timestamps are extracted. These data are then stored on the server in a
+structured format for subsequent use by the route-planning module and for visualization.
+
+
+\textbf{Web Interface Component:}
+A web application allows users to configure the simulation parameters (e.g., source location,
+release characteristics, meteorological dataset) and initiate model runs. The interface also
+provides interactive visualization of the dispersion results on a map, enabling users to explore
+the spatial and temporal evolution of the hazardous plume.
+
+
+
+\textbf{Escape Route Planner Component:}
+The escape-route planning module operates on the processed pollutant concentration data and
+the underlying road network stored in a spatial database. It prepares the required exposure and
+cost information for subsequent route computation, enabling analysis of evacuation paths under
+different dispersion conditions.
 
 \subsection{Problem Formulation}
+The evacuation routing problem is defined on a directed road network 
+\( G = (V, E) \), where \( V \) denotes the set of intersections and 
+\( E \) denotes the set of road segments. Each edge 
+\( e \in E \) is associated with a length \( l(e) \) and a 
+time-dependent pollutant concentration function \( c(e, t) \), which 
+represents the estimated concentration of hazardous material in that
+segment at time \( t \).
 
+Given a source node \( s \in V \) and a destination node \( d \in V \),
+the objective is to compute a path \( P = (e_1, e_2, \ldots, e_k) \) that \textbf{minimizes cumulative exposure to hazardous material}. In its general form, the optimization problem can be expressed as:
+
+\begin{equation}
+    \min \sum_{e \in P} w(e, t),
+\end{equation}
+
+where edge cost \( w(e, t) \) is a composite function that can incorporate multiple factors relevant to evacuation routing. In the current system, the cost function includes the following:
+
+\begin{itemize}
+    \item \textbf{Exposure cost:} 
+    The concentration of pollutant \( c(e, t) \) associated with the edge \( e \)
+    at time \( t \).
+    \item \textbf{Travel distance:}
+    The physical length \( l(e) \) of the road segment.
+    \item \textbf{Travel time:}
+    A function of distance and expected speed on edge \( e \).
+\end{itemize}
+
+The framework is designed to be extensible, allowing additional parameters to be incorporated into the cost function when required. 
+Examples of such parameters include:
+\begin{itemize}
+    \item \textbf{Traffic congestion:}
+    Dynamic congestion levels that affect travel time or road usability.
+    \item \textbf{Road accessibility constraints:}
+    Temporary closures, capacity limits, or restricted zones.
+    \item \textbf{Safety or risk modifiers:}
+    Penalties for proximity to the release location or hazardous areas.
+\end{itemize}
+
+\begin{table}[h]
+\centering
+\caption{Cost function Used in Evacuation Routing}
+\begin{tabular}{|c|p{8cm}|}
+\hline
+\textbf{Parameter} & \textbf{Description} \\ \hline
+Exposure Cost & Pollutant concentration \( c(e, t) \) on edge \( e \) at time \( t \) \\ \hline
+Travel Distance & Physical length \( l(e) \) of road segment \( e \) \\ \hline
+Travel Time & Estimated travel time on edge \( e \) based on distance and speed \\ \hline
+Traffic Congestion & Dynamic congestion levels affecting travel time \\ \hline  
+\end{tabular}
+\end{table}
+
+
+
+Although the mathematical objective remains constant —\emph{ minimizing exposure along a feasible path from \( s \) to \( d \)}—
+the specific scenario defined by the user determines the constraints under which the route must be computed. In practice, this system 
+supports multiple scenario types, including:
+\begin{itemize}
+    \item \textbf{Scenario of the user-specified destination:} The user specifies a particular destination \( d \). The route is calculated based on the estimated  travel time from \( s \) to \( d \) and the exposure along the path.
+    \item \textbf{Time-constrained scenario:} The user specifies a maximum allowable travel time \( T_{max} \). The route is calculated to minimize exposure while ensuring that the total travel time does not exceed \( T_{max} \).
+    \item \textbf{User-prioritized trade-off scenario:} The user assigns a weight between exposure minimization and travel distance/time,modifying the edge cost function.
+    \item \textbf{Worst-case scenario (safety-first): the} route is computed under the maximum concentration observed for each edge 
+    within the simulation window.
+    \item \textbf{Escape route scenario:} The route was computed with no specific destination in mind, but rather to lead the user away from the hazardous area as quickly as possible.
+    \item \textbf{Multi-destination scenario:} The user specifies multiple potential destinations, and the system computes routes to each, allowing the user to choose based on exposure and travel time.
+    \item \textbf{Predefined safe zones scenario:} The user can select the option of safe zones, and the system computes routes to the nearest safe zone (Government-designated shelters) while minimizing exposure.
+\end{itemize}
+
+Regardless of the chosen scenario, the underlying goal of the system is
+to compute a path that satisfies the user's constraints while minimizing
+the expected exposure to the hazardous material.
 \subsection{Baseline Approaches}
 
 \section{System Requirements}
@@ -32,8 +136,5 @@
 \section{System Arcitecture}
 
 \section{Data Model}
-
-\section{System Processes (Without Algorithm)}
-
 
 \end{document}
