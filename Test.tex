@@ -1,6 +1,7 @@
 \documentclass{article}
 \usepackage{graphicx} % Required for inserting images
-
+\usepackage{biblatex} %For referencing relevant articles
+\addbibresource{EvacuationRoutePlanning.bib}
 \title{mdm26-evacuationplanner}
 \author{Pantelis Kanaris }
 \date{November 2025}
@@ -11,6 +12,8 @@
 
 \tableofcontents
 
+
+
 \begin{abstract}
 
 \end{abstract}
@@ -18,54 +21,51 @@
 \section{Introduction}
 
 \section{Related Work}
+The field of evacuation routing under hazardous environmental conditions spans many different research areas, including atmospheric dispersion modeling,exposure and dose estimation,geo-spatial routing and multi-hazard evacuation systems. Prior work has approach the problem from different angles depending on the hazard type(chemical releases,radioactive leakage,wildfires,flooding) and the available spatial information(predefined road networks,indoor layouts,or uncharted terrain).This section reviews the most relevant contributors across these themes and highlights how the proposed system integrates concepts from multiple research domains.
+
+\subsection{Atmospheric Dispersion Modeling}
+\subsubsection{Dose Model}
+\subsubsection{Air Pollution Aware Routing}
+
+\subsection{Evacuation Route Planning}
+\subsubsection{General evacuation route planning on road networks}
+\subsubsection{Wildfire and wildland evacuation and routing}
+
+
+Atmospheric dispersion modeling plays a central role in predicting the transport and deposition of hazardous airborne materials. A variety of models have been employed in the literature, 
 
 \section{System Model \& Problem Formulation}
 In this section we present the system model, problem formulation, and baseline approaches.
 \subsection{System Model}
-The proposed system consists of three principal components: (1) an atmospheric dispersion
-simulation module based on the HYSPLIT model, (2) a web-based interface for simulation
-configuration and visualization, and (3) an escape-route planning module that operates on the
-processed dispersion output.
+The proposed system consists of three principal components: (1) an atmospheric dispersion simulation module based on the HYSPLIT model, (2) a web-based interface for simulation configuration and visualization, and (3) an escape-route planning module that operates on the processed dispersion output.
+\\
+
 
 \textbf{HYSPLIT Simulation Component:}
-HYSPLIT is an established atmospheric dispersion model widely used for modelling the
-transport and diffusion of hazardous airborne materials. It requires as input the source location,
-release height, release duration, and meteorological data corresponding to the simulation period.
-Because HYSPLIT only accepts meteorological data in the ARL (Air Resources Laboratory)
-format, publicly available GFS (Global Forecast System) data must first be preprocessed using
-the official conversion utilities. After preprocessing, the model is executed within a Docker
-container hosted on a dedicated server. The model produces a sequence of hourly output files,
-each containing concentration values at discrete geographic coordinates.
+HYSPLIT is an established atmospheric dispersion model widely used for modeling the transport and diffusion of hazardous airborne materials. It requires as input the source location,release height, release duration, and meteorological data corresponding to the simulation period. Because HYSPLIT only accepts meteorological data in the ARL (Air Resources Laboratory) format, publicly available GFS (Global Forecast System) data must first be preprocessed using the official conversion utilities. After preprocessing, the model is executed within a Dockercontainer hosted on a dedicated server. The model produces a sequence of hourly output files,each containing concentration values at discrete geographic coordinates.
+\\
 
 
 \textbf{Data Processing Component:}
-Upon completion of the simulation, the generated output files are parsed and the concentration
-values, coordinates, and timestamps are extracted. These data are then stored on the server in a
-structured format for subsequent use by the route-planning module and for visualization.
+Upon completion of the simulation, the generated output files are parsed and the concentration values, coordinates, and timestamps are extracted. These data are then stored on the server in a structured format for subsequent use by the route-planning module and for visualization.
+\\
 
 
 \textbf{Web Interface Component:}
-A web application allows users to configure the simulation parameters (e.g., source location,
-release characteristics, meteorological dataset) and initiate model runs. The interface also
-provides interactive visualization of the dispersion results on a map, enabling users to explore
+A web application allows users to configure the simulation parameters (e.g., source location, release characteristics, meteorological dataset) and initiate model runs. The interface also provides interactive visualization of the dispersion results on a map, enabling users to explore
 the spatial and temporal evolution of the hazardous plume.
-
+\\
 
 
 \textbf{Escape Route Planner Component:}
-The escape-route planning module operates on the processed pollutant concentration data and
-the underlying road network stored in a spatial database. It prepares the required exposure and
-cost information for subsequent route computation, enabling analysis of evacuation paths under
-different dispersion conditions.
+The escape-route planning module operates on the processed pollutant concentration data and the underlying road network stored in a spatial database. It prepares the required exposure and cost information for subsequent route computation, enabling analysis of evacuation paths under
+different scenarios.
+\\
+
 
 \subsection{Problem Formulation}
-The evacuation routing problem is defined on a directed road network 
-\( G = (V, E) \), where \( V \) denotes the set of intersections and 
-\( E \) denotes the set of road segments. Each edge 
-\( e \in E \) is associated with a length \( l(e) \) and a 
-time-dependent pollutant concentration function \( c(e, t) \), which 
-represents the estimated concentration of hazardous material in that
-segment at time \( t \).
+The evacuation routing problem is defined on a directed road network \( G = (V, E) \), where \( V \) denotes the set of intersections and 
+\( E \) denotes the set of road segments.In practise \(G\) denotes the \emph{subgraph} of the road network induced in the area of interest, i.e, the portiom of the network that lies withing the HYSPLIT simulation domain or within a user-defined area. Each edge \( e \in E \) is associated with a length \( l(e) \) and a time-dependent pollutant concentration function \( c(e, t) \), which represents the estimated concentration of hazardous material in that segment at time \( t \).
 
 Given a source node \( s \in V \) and a destination node \( d \in V \),
 the objective is to compute a path \( P = (e_1, e_2, \ldots, e_k) \) that \textbf{minimizes cumulative exposure to hazardous material}. In its general form, the optimization problem can be expressed as:
@@ -78,8 +78,7 @@ where edge cost \( w(e, t) \) is a composite function that can incorporate multi
 
 \begin{itemize}
     \item \textbf{Exposure cost:} 
-    The concentration of pollutant \( c(e, t) \) associated with the edge \( e \)
-    at time \( t \).
+    The concentration of pollutant \( c(e, t) \) associated with the edge \( e \)at time \( t \).
     \item \textbf{Travel distance:}
     The physical length \( l(e) \) of the road segment.
     \item \textbf{Travel time:}
@@ -126,9 +125,7 @@ supports multiple scenario types, including:
     \item \textbf{Predefined safe zones scenario:} The user can select the option of safe zones, and the system computes routes to the nearest safe zone (Government-designated shelters) while minimizing exposure.
 \end{itemize}
 
-Regardless of the chosen scenario, the underlying goal of the system is
-to compute a path that satisfies the user's constraints while minimizing
-the expected exposure to the hazardous material.
+\textbf{Regardless of the chosen scenario, the underlying goal of the system is to compute a path that satisfies the user's constraints while minimizing the expected exposure to the hazardous material.}
 \subsection{Baseline Approaches}
 
 \section{System Requirements}
@@ -136,5 +133,7 @@ the expected exposure to the hazardous material.
 \section{System Arcitecture}
 
 \section{Data Model}
+
+\printbibliography %Prints bibliography
 
 \end{document}
